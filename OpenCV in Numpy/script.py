@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import filedialog
 import time
 
+#GitHub Repository URL: https://github.com/GVihi/osnove-rac-vida/tree/main/OpenCV%20in%20Numpy
+
 save_to_disk = "no"
 
 def saveVideoToDisk():
