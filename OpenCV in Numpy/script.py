@@ -3,25 +3,34 @@ import numpy as np
 import tkinter as tk
 from tkinter import filedialog
 import time
+from PIL import Image, ImageTk
 
 #GitHub Repository URL: https://github.com/GVihi/osnove-rac-vida/tree/main/OpenCV%20in%20Numpy
 
-save_to_disk = "no"
+save_to_disk = 0
 
 def saveVideoToDisk():
     global save_to_disk
-    save_to_disk = "yes"
+    save_to_disk = 1
 
 #Button1 Function -- setting file_path to whatever you choose in the openFileDialog
 #Calling mainProgram function after setting file_path
 def selectImage():
     file_path = filedialog.askopenfilename()
+    button1.destroy()
+    button2.destroy()
+    button3.destroy()
+
+    root.update()
+
     mainProgram(file_path)
+
+    
 
 #Button1 Function -- setting file_path to "Vid.mp4"; video file in the directory
 #Calling mainProgram function after setting file_path
 def selectedVideo():
-    file_path = "Vid.mp4"
+    file_path = filedialog.askopenfilename()
 
     #Button used for pausing video; TODO implementation
     pause = tk.Button(
@@ -84,17 +93,29 @@ def cameraFeed():
     mainProgram(file_path)
 
 #OpenVC function
-def mainProgram(file_path):
-    out = cv2.VideoWriter('output.avi', -1, 20.0, (640, 480))
+def mainProgram(file_path): #TODO: Fix for loading images
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter('output.avi', fourcc, 24.0, (960, 540))
     cap = cv2.VideoCapture(file_path) #"Video" source is file_path
 
     while True:
         _, img = cap.read()
 
         img = cv2.resize(img, (960, 540)) #Resizing to fit screen; unmodified is too large
-        cv2.imshow('Hello', img) #Opens windows and display video/image
-        if save_to_disk == "yes": #If save_to_disk is true, save current frame to disk
+        global save_to_disk
+        if save_to_disk == 1: #If save_to_disk is true, save current frame to disk
             out.write(img)
+
+        #cv2.imshow('Hello', img) #Opens windows and display video/image
+        
+        im = Image.fromarray(img)
+        b, g, r = im.split() #OpenCV uses BGR order instead of RGB
+        im = Image.merge("RGB", (r, g, b)) #Merging in the correct R G B order
+        imgtk = ImageTk.PhotoImage(image=im)
+        frameImg = tk.Label(root, image=imgtk)
+        frameImg.pack()
+        root.update()
+        frameImg.destroy()
         if cv2.waitKey(1) & 0xFF == ord('q'): #Waits for input, if "q" breaks loop
             break
 
@@ -102,6 +123,7 @@ def mainProgram(file_path):
     cv2.destroyAllWindows()
     root.quit()
 
+#Main:
 #Initialize GUI
 root = tk.Tk()
 
