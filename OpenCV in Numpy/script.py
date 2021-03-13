@@ -23,6 +23,10 @@ def fForward():
     global ff
     ff = 1
 
+def fForward2():
+    global ff
+    ff = 2
+
 def saveVideoToDisk():
     global save_to_disk
     save_to_disk = 1
@@ -63,7 +67,7 @@ def selectImage(): #Works with jpg, doesnt work with png: "AttributeError: 'None
 def selectedVideo():
     file_path = filedialog.askopenfilename()
 
-    #Button used for pausing video; TODO implementation
+    #Button used for pausing video
     pause = tk.Button(
     text="Pause",
     width=25,
@@ -73,7 +77,7 @@ def selectedVideo():
     command=pauseV
     )
 
-    #Button used for resuming video; TODO implementation
+    #Button used for resuming video
     resume = tk.Button(
     text="Resume",
     width=25,
@@ -83,14 +87,23 @@ def selectedVideo():
     command=resumeV
     )
 
-    #Button used for fast forwarding video; TODO implementation
+    #Button used for fast forwarding video
     fast_forward = tk.Button(
-    text="FF 5 Sec",
+    text="FF 50 Frames",
     width=25,
     height=5,
     bg="yellow",
-    fg="white",
+    fg="black",
     command=fForward
+    )
+
+    fast_forward2 = tk.Button(
+    text="Rewind 50 Frames",
+    width=25,
+    height=5,
+    bg="yellow",
+    fg="black",
+    command=fForward2
     )
 
     button1.destroy()
@@ -99,6 +112,7 @@ def selectedVideo():
     pause.pack()
     resume.pack()
     fast_forward.pack()
+    fast_forward2.pack()
 
     root.update()
 
@@ -137,7 +151,13 @@ def mainProgram(file_path):
         global play
 
         if ff == 1:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, cv2.CAP_PROP_POS_FRAMES + 50)
+            currentPos = cap.get(cv2.CAP_PROP_POS_FRAMES)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, currentPos + 50)
+            ff = 0
+
+        if ff == 2:
+            currentPos = cap.get(cv2.CAP_PROP_POS_FRAMES)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, currentPos - 50)
             ff = 0
 
         if play == 1:
