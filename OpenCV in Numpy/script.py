@@ -97,6 +97,7 @@ def selectedVideo():
     command=fForward
     )
 
+    #Button used for going back 50 frames video
     fast_forward2 = tk.Button(
     text="Rewind 50 Frames",
     width=25,
