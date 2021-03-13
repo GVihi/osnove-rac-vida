@@ -8,6 +8,20 @@ from PIL import Image, ImageTk
 #GitHub Repository URL: https://github.com/GVihi/osnove-rac-vida/tree/main/OpenCV%20in%20Numpy
 
 save_to_disk = 0
+play = 1
+ff = 0
+
+def pauseV():
+    global play
+    play = 0
+
+def resumeV():
+    global play
+    play = 1
+
+def fForward():
+    global ff
+    ff = 1
 
 def saveVideoToDisk():
     global save_to_disk
@@ -15,7 +29,7 @@ def saveVideoToDisk():
 
 #Button1 Function -- setting file_path to whatever you choose in the openFileDialog
 #Calling mainProgram function after setting file_path
-def selectImage():
+def selectImage(): #Works with jpg, doesnt work with png: "AttributeError: 'NoneType' object has no attribute '__array_interface__'", whatever that means
     file_path = filedialog.askopenfilename()
     button1.destroy()
     button2.destroy()
@@ -23,9 +37,26 @@ def selectImage():
 
     root.update()
 
-    mainProgram(file_path)
+    cap = cv2.VideoCapture(file_path) #"Video" source is file_path
 
-    
+    _, img = cap.read()
+
+    img = cv2.resize(img, (960, 540)) #Resizing to fit screen; unmodified is too large
+    #cv2.imshow('Hello', img) #Opens windows and display video/image
+    while True:
+        im = Image.fromarray(img)
+        b, g, r = im.split() #OpenCV uses BGR order instead of RGB
+        im = Image.merge("RGB", (r, g, b)) #Merging in the correct R G B order
+        imgtk = ImageTk.PhotoImage(image=im)
+        frameImg = tk.Label(root, image=imgtk)
+        frameImg.pack()
+        root.update()
+        frameImg.destroy()
+        
+
+    cap.release()
+    cv2.destroyAllWindows()
+    root.quit()
 
 #Button1 Function -- setting file_path to "Vid.mp4"; video file in the directory
 #Calling mainProgram function after setting file_path
@@ -38,7 +69,8 @@ def selectedVideo():
     width=25,
     height=5,
     bg="red",
-    fg="white"
+    fg="white",
+    command=pauseV
     )
 
     #Button used for resuming video; TODO implementation
@@ -47,7 +79,8 @@ def selectedVideo():
     width=25,
     height=5,
     bg="green",
-    fg="white"
+    fg="white",
+    command=resumeV
     )
 
     #Button used for fast forwarding video; TODO implementation
@@ -56,7 +89,8 @@ def selectedVideo():
     width=25,
     height=5,
     bg="yellow",
-    fg="white"
+    fg="white",
+    command=fForward
     )
 
     button1.destroy()
@@ -93,13 +127,21 @@ def cameraFeed():
     mainProgram(file_path)
 
 #OpenVC function
-def mainProgram(file_path): #TODO: Fix for loading images
+def mainProgram(file_path):
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter('output.avi', fourcc, 24.0, (960, 540))
     cap = cv2.VideoCapture(file_path) #"Video" source is file_path
 
     while True:
-        _, img = cap.read()
+        global ff
+        global play
+
+        if ff == 1:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, cv2.CAP_PROP_POS_FRAMES + 50)
+            ff = 0
+
+        if play == 1:
+            _, img = cap.read()
 
         img = cv2.resize(img, (960, 540)) #Resizing to fit screen; unmodified is too large
         global save_to_disk
@@ -116,8 +158,6 @@ def mainProgram(file_path): #TODO: Fix for loading images
         frameImg.pack()
         root.update()
         frameImg.destroy()
-        if cv2.waitKey(1) & 0xFF == ord('q'): #Waits for input, if "q" breaks loop
-            break
 
     cap.release()
     cv2.destroyAllWindows()
