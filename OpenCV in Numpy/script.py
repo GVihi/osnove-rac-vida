@@ -7,10 +7,12 @@ from PIL import Image, ImageTk
 
 #GitHub Repository URL: https://github.com/GVihi/osnove-rac-vida/tree/main/OpenCV%20in%20Numpy
 
+#Global variables
 save_to_disk = 0
 play = 1
 ff = 0
 
+#Self explanatory functions
 def pauseV():
     global play
     play = 0
@@ -34,37 +36,42 @@ def saveVideoToDisk():
 #Button1 Function -- setting file_path to whatever you choose in the openFileDialog
 #Calling mainProgram function after setting file_path
 def selectImage(): #Works with jpg, doesnt work with png: "AttributeError: 'NoneType' object has no attribute '__array_interface__'", whatever that means
+    #openFileDialog. User selects image to display
     file_path = filedialog.askopenfilename()
+
+    #Removing "Load Image", "Load Video" and "Camera Feed" buttons
     button1.destroy()
     button2.destroy()
     button3.destroy()
 
+    #Updating UI to show changes
     root.update()
 
     cap = cv2.VideoCapture(file_path) #"Video" source is file_path
 
-    _, img = cap.read()
+    _, img = cap.read() #Reading frame
 
     img = cv2.resize(img, (960, 540)) #Resizing to fit screen; unmodified is too large
     #cv2.imshow('Hello', img) #Opens windows and display video/image
     while True:
-        im = Image.fromarray(img)
+        im = Image.fromarray(img) #Constructs a CASA image from a numerical array
         b, g, r = im.split() #OpenCV uses BGR order instead of RGB
         im = Image.merge("RGB", (r, g, b)) #Merging in the correct R G B order
-        imgtk = ImageTk.PhotoImage(image=im)
-        frameImg = tk.Label(root, image=imgtk)
-        frameImg.pack()
-        root.update()
-        frameImg.destroy()
+        imgtk = ImageTk.PhotoImage(image=im) #Converts into Tkinter compatible photo image
+        frameImg = tk.Label(root, image=imgtk) #Puts image into a label
+        frameImg.pack() #Packs label into UI
+        root.update() #Update UI to show changes
+        frameImg.destroy() #Destroys every iteration, that way the frame keeps refrsehing 
         
 
-    cap.release()
-    cv2.destroyAllWindows()
-    root.quit()
+    cap.release() #De-allocation
+    cv2.destroyAllWindows() #De-allocation
+    root.quit() #Closes Tkinter UI
 
 #Button1 Function -- setting file_path to "Vid.mp4"; video file in the directory
 #Calling mainProgram function after setting file_path
 def selectedVideo():
+    #openFileDialog. User selects video to display
     file_path = filedialog.askopenfilename()
 
     #Button used for pausing video
@@ -74,7 +81,7 @@ def selectedVideo():
     height=5,
     bg="red",
     fg="white",
-    command=pauseV
+    command=pauseV #Onclick call pauseV() function
     )
 
     #Button used for resuming video
@@ -84,7 +91,7 @@ def selectedVideo():
     height=5,
     bg="green",
     fg="white",
-    command=resumeV
+    command=resumeV #Onclick call resumeV() function
     )
 
     #Button used for fast forwarding video
@@ -94,7 +101,7 @@ def selectedVideo():
     height=5,
     bg="yellow",
     fg="black",
-    command=fForward
+    command=fForward #Onclick call fForward2() function
     )
 
     #Button used for going back 50 frames video
@@ -104,25 +111,30 @@ def selectedVideo():
     height=5,
     bg="yellow",
     fg="black",
-    command=fForward2
+    command=fForward2 #Onclick call fForward2() function
     )
 
+    #Removing "Load Image", "Load Video" and "Camera Feed" buttons
     button1.destroy()
     button2.destroy()
     button3.destroy()
+
+    #Adding "Pause", "Resume", "Forward 50 frames" and "Back 50 frames" buttons
     pause.pack()
     resume.pack()
     fast_forward.pack()
     fast_forward2.pack()
 
+    #Updating UI, to show changes
     root.update()
 
-    mainProgram(file_path)
+    #Calling function to display video in Window
+    openCVfunction(file_path)
 
 #Button3 Function -- setting file_path to 0; camera feed
 #Calling mainProgram function after setting file_path
 def cameraFeed():
-    file_path = 0
+    file_path = 0 #0 = Camera
 
     save_video = tk.Button(
     text="Save Video",
@@ -130,98 +142,107 @@ def cameraFeed():
     height=5,
     bg="green",
     fg="black",
-    command=saveVideoToDisk
+    command=saveVideoToDisk #Onclick call saveVideoToDisk() function
     )
 
+    #Removing "Load Image", "Load Video" and "Camera Feed" buttons
     button1.destroy()
     button2.destroy()
     button3.destroy()
+
+    #Adding "Save video" button
     save_video.pack()
+
+    #Updating UI, to show changes
     root.update()
 
-    mainProgram(file_path)
+    #Calling function to display camera in Window
+    openCVfunction(file_path)
 
 #OpenVC function
-def mainProgram(file_path):
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter('output.avi', fourcc, 24.0, (960, 540))
+def openCVfunction(file_path):
+    fourcc = cv2.VideoWriter_fourcc(*'XVID') #Setting encoder
+    out = cv2.VideoWriter('output.avi', fourcc, 24.0, (960, 540)) #File name, encoder, fps, resolution
     cap = cv2.VideoCapture(file_path) #"Video" source is file_path
 
     while True:
-        global ff
+        #Telling the program to use global variables
+        global ff 
         global play
+        global save_to_disk
 
         if ff == 1:
-            currentPos = cap.get(cv2.CAP_PROP_POS_FRAMES)
-            cap.set(cv2.CAP_PROP_POS_FRAMES, currentPos + 50)
-            ff = 0
+            currentPos = cap.get(cv2.CAP_PROP_POS_FRAMES) #Get current frame
+            cap.set(cv2.CAP_PROP_POS_FRAMES, currentPos + 50) #Set frame to current + 50
+            ff = 0 #Reset conditional variable
 
         if ff == 2:
-            currentPos = cap.get(cv2.CAP_PROP_POS_FRAMES)
-            cap.set(cv2.CAP_PROP_POS_FRAMES, currentPos - 50)
-            ff = 0
+            currentPos = cap.get(cv2.CAP_PROP_POS_FRAMES) #Get current frame
+            cap.set(cv2.CAP_PROP_POS_FRAMES, currentPos - 50) #Set frame to current - 50
+            ff = 0 #Reset conditional variable
 
         if play == 1:
-            _, img = cap.read()
+            _, img = cap.read() #Reading frame
 
         img = cv2.resize(img, (960, 540)) #Resizing to fit screen; unmodified is too large
-        global save_to_disk
+        
         if save_to_disk == 1: #If save_to_disk is true, save current frame to disk
             out.write(img)
 
         #cv2.imshow('Hello', img) #Opens windows and display video/image
         
-        im = Image.fromarray(img)
+        im = Image.fromarray(img) #Constructs a CASA image from a numerical array
         b, g, r = im.split() #OpenCV uses BGR order instead of RGB
         im = Image.merge("RGB", (r, g, b)) #Merging in the correct R G B order
-        imgtk = ImageTk.PhotoImage(image=im)
-        frameImg = tk.Label(root, image=imgtk)
-        frameImg.pack()
-        root.update()
-        frameImg.destroy()
+        imgtk = ImageTk.PhotoImage(image=im) #Converts into Tkinter compatible photo image
+        frameImg = tk.Label(root, image=imgtk) #Puts image into a label
+        frameImg.pack() #Packs label into UI
+        root.update() #Updates UI to show changes
+        frameImg.destroy() #Destroys every iteration, that way the frame keeps refrsehing 
 
-    cap.release()
-    cv2.destroyAllWindows()
-    root.quit()
+    cap.release() #De-allocation
+    cv2.destroyAllWindows() #De-allocation
+    root.quit() #Closes Tkinter UI
 
 #Main:
-#Initialize GUI
-root = tk.Tk()
+if __name__ == "__main__":
+    #Initialize GUI
+    root = tk.Tk()
 
-# --nalaganje slike iz diska v poljubnem formatu.--
-button1 = tk.Button(
-    text="Load Image",
-    width=25,
-    height=5,
-    bg="blue",
-    fg="white",
-    command=selectImage
-)
+    # --nalaganje slike iz diska v poljubnem formatu.--
+    button1 = tk.Button(
+        text="Load Image",
+        width=25,
+        height=5,
+        bg="blue",
+        fg="white",
+        command=selectImage #Onclick call selectImage() function
+    )
 
-# --nalaganje video posnetka in njegovo predvajanje.--
-button2 = tk.Button(
-    text="Load Video",
-    width=25,
-    height=5,
-    bg="blue",
-    fg="white",
-    command=selectedVideo
-)
+    # --nalaganje video posnetka in njegovo predvajanje.--
+    button2 = tk.Button(
+        text="Load Video",
+        width=25,
+        height=5,
+        bg="blue",
+        fg="white",
+        command=selectedVideo #Onclick call selectedVideo() function
+    )
 
-# --zajem toka iz kamere.--
-button3 = tk.Button(
-    text="Capture Camera",
-    width=25,
-    height=5,
-    bg="blue",
-    fg="white",
-    command=cameraFeed
-)
+    # --zajem toka iz kamere.--
+    button3 = tk.Button(
+        text="Capture Camera",
+        width=25,
+        height=5,
+        bg="blue",
+        fg="white",
+        command=cameraFeed #Onclick call cameraFeed() function
+    )
 
-#Adding widget to window
-button1.pack()
-button2.pack()
-button3.pack()
+    #Adding widget to window
+    button1.pack()
+    button2.pack()
+    button3.pack()
 
-#Tells Python to run Tkinter "Event Loop"
-root.mainloop()
+    #Tells Python to run Tkinter "Event Loop"
+    root.mainloop()
