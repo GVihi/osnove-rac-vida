@@ -4,8 +4,7 @@ import tkinter as tk
 from tkinter import filedialog
 import time
 from PIL import Image, ImageTk
-
-#GitHub Repository URL: https://github.com/GVihi/osnove-rac-vida/tree/main/OpenCV%20in%20Numpy
+from matplotlib import pyplot as plt
 
 #Global variables
 save_to_disk = 0
@@ -33,23 +32,161 @@ def saveVideoToDisk():
     global save_to_disk
     save_to_disk = 1
 
+def isGray(img):
+    (h,w,d) = img.shape
+    for i in range(w):
+        for j in range(h):
+            b = img[i, j, 0]
+            g = img[i, j, 1]
+            r = img[i, j, 2]
+            if b != g != r:
+                return False
+    return True
+
+def calculateHistogram(img):
+    binW = (max([0, 256]) - min([0, 256])) / 3
+    startBin = -0.1
+    endBin = binW
+    segBins = []
+
+    i = 0
+    while i < 3:
+        binPair = []
+        binPair.append(startBin)
+        binPair.append(endBin)
+        segBins.append(binPair)
+        startBin += binW
+        endBin += binW
+        i += 1
+
+    (h, w, d) = img.shape
+    if isGray(img) == True:
+        grayPanel = [[img[i, j, 0]
+        for i in range(h)]
+        for j in range(w)]
+
+        histogram = [0 for i in range(3)]
+        for i in range(w):
+            for j in range(h):
+                for k in range(3):
+                    if grayPanel[i][j] > segBins[k][0] and grayPanel[i][j] < segBins[k][1]:
+                        histogram[k] += 1
+    else:
+        rPanel = [[img[i, j, 2]
+        for i in range(h)]
+        for j in range(w)]
+        gPanel = [[img[i, j, 1]
+        for i in range(h)]
+        for j in range(w)]
+        bPanel = [[img[i, j, 0]
+        for i in range(h)]
+        for j in range(w)]
+
+        rhistogram = [0 for i in range(3)]
+        for i in range(w):
+            for j in range(h):
+                for k in range(3):
+                    if rPanel[i][j] > segBins[k][0] and rPanel[i][j] < segBins[k][1]:
+                        rhistogram[k] += 1
+
+        ghistogram = [0 for i in range(3)]
+        for i in range(w):
+            for j in range(h):
+                for k in range(3):
+                    if gPanel[i][j] > segBins[k][0] and gPanel[i][j] < segBins[k][1]:
+                        ghistogram[k] += 1
+
+        bhistogram = [0 for i in range(3)]
+        for i in range(w):
+            for j in range(h):
+                for k in range(3):
+                    if bPanel[i][j] > segBins[k][0] and bPanel[i][j] < segBins[k][1]:
+                        bhistogram[k] += 1
+
+        #plt.hist(rhistogram)
+        #plt.hist(ghistogram)
+        #plt.hist(bhistogram)
+
+        tempHist = np.array(rhistogram).reshape(-1, 1)
+        y = np.arange(len(tempHist))
+        plt.bar(y, tempHist[:, 0].tolist())
+        tempHist = np.array(ghistogram).reshape(-1, 1)
+        y = np.arange(len(tempHist))
+        plt.bar(y, tempHist[:, 0].tolist())
+        tempHist = np.array(bhistogram).reshape(-1, 1)
+        y = np.arange(len(tempHist))
+        plt.bar(y, tempHist[:, 0].tolist())
+        plt.show()
+
+    
+    #(h,w,d) = img.shape
+    #for i in range(h):
+    #    for j in range(w):
+    #        hist[img[j,i]] += 1
+    #plt.plot(hist)
+    #plt.show()
+
+def equalizeHistogram():
+    something = 1
+
+def backProjection():
+    something = 1
+
+
 #Button1 Function -- setting file_path to whatever you choose in the openFileDialog
 #Calling mainProgram function after setting file_path
 def selectImage(): #Works with jpg, doesnt work with png: "AttributeError: 'NoneType' object has no attribute '__array_interface__'", whatever that means
     #openFileDialog. User selects image to display
-    file_path = filedialog.askopenfilename()
+    file_path = filedialog.askopenfilename(filetypes=[("JPG", "*.jpg")])
 
     #Removing "Load Image", "Load Video" and "Camera Feed" buttons
     button1.destroy()
     button2.destroy()
     button3.destroy()
 
-    #Updating UI to show changes
-    root.update()
-
     cap = cv2.VideoCapture(file_path) #"Video" source is file_path
 
     _, img = cap.read() #Reading frame
+    #img = cv2.imread(file_path)
+
+    #Button used for calculating histrogram
+    calcHisto = tk.Button(
+    text="Calculate histogram",
+    width=25,
+    height=5,
+    bg="yellow",
+    fg="black",
+    command=lambda: calculateHistogram(img) #Onclick call ---- function
+    )
+
+    eqHisto = tk.Button(
+    text="Equalize histogram",
+    width=25,
+    height=5,
+    bg="yellow",
+    fg="black",
+    command=lambda: equalizeHistogram #Onclick call ---- function
+    )
+
+    backProj = tk.Button(
+    text="Back projection",
+    width=25,
+    height=5,
+    bg="yellow",
+    fg="black",
+    command=lambda: backProjection #Onclick call ---- function
+    )
+
+    backProj.pack(side="bottom", fill="x", expand=False)
+    eqHisto.pack(side="bottom", fill="x", expand=False)
+    calcHisto.pack(side="bottom", fill="x", expand=False)
+
+    #Updating UI to show changes
+    root.update()
+
+    #hist = cv2.calcHist([img], [0], None, [256], [0, 256])
+    #plt.plot(hist)
+    #plt.show()
 
     img = cv2.resize(img, (960, 540)) #Resizing to fit screen; unmodified is too large
     #cv2.imshow('Hello', img) #Opens windows and display video/image
@@ -61,8 +198,7 @@ def selectImage(): #Works with jpg, doesnt work with png: "AttributeError: 'None
         frameImg = tk.Label(root, image=imgtk) #Puts image into a label
         frameImg.pack() #Packs label into UI
         root.update() #Update UI to show changes
-        frameImg.destroy() #Destroys every iteration, that way the frame keeps refrsehing 
-        
+        frameImg.destroy() #Destroys every iteration, that way the frame keeps refrsehing
 
     cap.release() #De-allocation
     cv2.destroyAllWindows() #De-allocation
@@ -72,7 +208,7 @@ def selectImage(): #Works with jpg, doesnt work with png: "AttributeError: 'None
 #Calling mainProgram function after setting file_path
 def selectedVideo():
     #openFileDialog. User selects video to display
-    file_path = filedialog.askopenfilename()
+    file_path = filedialog.askopenfilename(filetypes=[("MKV", "*.mkv"), ("MP4", "*.mp4")])
 
     #Button used for pausing video
     pause = tk.Button(
@@ -120,10 +256,10 @@ def selectedVideo():
     button3.destroy()
 
     #Adding "Pause", "Resume", "Forward 50 frames" and "Back 50 frames" buttons
-    pause.pack()
-    resume.pack()
-    fast_forward.pack()
-    fast_forward2.pack()
+    pause.pack(side="bottom", fill="x", expand=False)
+    resume.pack(side="bottom", fill="x", expand=False)
+    fast_forward.pack(side="bottom", fill="x", expand=False)
+    fast_forward2.pack(side="bottom", fill="x", expand=False)
 
     #Updating UI, to show changes
     root.update()
@@ -151,7 +287,7 @@ def cameraFeed():
     button3.destroy()
 
     #Adding "Save video" button
-    save_video.pack()
+    save_video.pack(side="bottom", fill="x", expand=False)
 
     #Updating UI, to show changes
     root.update()
