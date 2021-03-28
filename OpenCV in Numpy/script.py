@@ -1,5 +1,6 @@
 from cv2 import cv2
 import numpy as np
+from numpy import asarray
 import tkinter as tk
 from tkinter import filedialog
 import time
@@ -33,101 +34,144 @@ def saveVideoToDisk():
     save_to_disk = 1
 
 def isGray(img):
-    (h,w,d) = img.shape
-    for i in range(w):
-        for j in range(h):
-            b = img[i, j, 0]
-            g = img[i, j, 1]
-            r = img[i, j, 2]
+    #Converts image into numpy array
+    imgArray = asarray(img).tolist()
+    #Loop through the imageArray
+    for x in range(len(imgArray)):
+        for y in range(len(imgArray[x])):
+            r = imgArray[x][y][0]
+            g = imgArray[x][y][1]
+            b = imgArray[x][y][2]
+            #If r,g,b values are different from one another, the image is colored
             if b != g != r:
                 return False
     return True
 
 def calculateHistogram(img):
-    binW = (max([0, 256]) - min([0, 256])) / 3
-    startBin = -0.1
-    endBin = binW
-    segBins = []
-
-    i = 0
-    while i < 3:
-        binPair = []
-        binPair.append(startBin)
-        binPair.append(endBin)
-        segBins.append(binPair)
-        startBin += binW
-        endBin += binW
-        i += 1
-
-    (h, w, d) = img.shape
+    #Check if image is gray
     if isGray(img) == True:
-        grayPanel = [[img[i, j, 0]
-        for i in range(h)]
-        for j in range(w)]
+        #Converts image into numpy array
+        imgArray = asarray(img).tolist()
+        #Array of size 256, every value set to 0
+        histogram = [0] * 256
+        #Loop through the imageArray
+        for x in range(len(imgArray)):
+            for y in range(len(imgArray[x])):
+                histogram[imgArray[x][y][0]] += 1
+                histogram[imgArray[x][y][1]] += 1 #Should be histogram[imgArray[x][y]] += 1 , but I think due to some cv2 grayscale error it doesn't work: 
+                histogram[imgArray[x][y][2]] += 1                                      # TypeError: list indices must be integers or slices, not list
 
-        histogram = [0 for i in range(3)]
-        for i in range(w):
-            for j in range(h):
-                for k in range(3):
-                    if grayPanel[i][j] > segBins[k][0] and grayPanel[i][j] < segBins[k][1]:
-                        histogram[k] += 1
     else:
-        rPanel = [[img[i, j, 2]
-        for i in range(h)]
-        for j in range(w)]
-        gPanel = [[img[i, j, 1]
-        for i in range(h)]
-        for j in range(w)]
-        bPanel = [[img[i, j, 0]
-        for i in range(h)]
-        for j in range(w)]
+        im = Image.fromarray(img) #Constructs a CASA image from a numerical array
+        b, g, r = im.split() #OpenCV uses BGR order instead of RGB
+        im = Image.merge("RGB", (r, g, b)) #Merging in the correct R G B order
 
-        rhistogram = [0 for i in range(3)]
-        for i in range(w):
-            for j in range(h):
-                for k in range(3):
-                    if rPanel[i][j] > segBins[k][0] and rPanel[i][j] < segBins[k][1]:
-                        rhistogram[k] += 1
+        imgArray = asarray(im).tolist()
+        rHistogram = [0] * 256
+        gHistogram = [0] * 256
+        bHistogram = [0] * 256
 
-        ghistogram = [0 for i in range(3)]
-        for i in range(w):
-            for j in range(h):
-                for k in range(3):
-                    if gPanel[i][j] > segBins[k][0] and gPanel[i][j] < segBins[k][1]:
-                        ghistogram[k] += 1
-
-        bhistogram = [0 for i in range(3)]
-        for i in range(w):
-            for j in range(h):
-                for k in range(3):
-                    if bPanel[i][j] > segBins[k][0] and bPanel[i][j] < segBins[k][1]:
-                        bhistogram[k] += 1
-
-        #plt.hist(rhistogram)
-        #plt.hist(ghistogram)
-        #plt.hist(bhistogram)
-
-        tempHist = np.array(rhistogram).reshape(-1, 1)
-        y = np.arange(len(tempHist))
-        plt.bar(y, tempHist[:, 0].tolist())
-        tempHist = np.array(ghistogram).reshape(-1, 1)
-        y = np.arange(len(tempHist))
-        plt.bar(y, tempHist[:, 0].tolist())
-        tempHist = np.array(bhistogram).reshape(-1, 1)
-        y = np.arange(len(tempHist))
-        plt.bar(y, tempHist[:, 0].tolist())
+        for x in range(len(imgArray)):
+            for y in range(len(imgArray[x])):
+                for k in range(len(imgArray[x][y])):
+                    #0: Red panel
+                    if k == 0:
+                        rHistogram[imgArray[x][y][k]] += 1
+                    #1: Green panel
+                    if k == 1:
+                        gHistogram[imgArray[x][y][k]] += 1
+                    #2: Blue panel
+                    if k == 2:
+                        bHistogram[imgArray[x][y][k]] += 1
+    
+    #Defined y axis on histogram
+    y = np.arange(256)
+    if isGray(img) == True:
+        #Adding the value to be displayed in the histogram
+        plt.title("Histogram - Gray")
+        plt.bar(y, histogram, color = "gray")
+        plt.show()
+    else:
+        plt.title("Histogram - Colored")
+        plt.bar(y, rHistogram, color = "red")
+        plt.bar(y, gHistogram, color = "green")
+        plt.bar(y, bHistogram, color = "blue")
         plt.show()
 
-    
-    #(h,w,d) = img.shape
-    #for i in range(h):
-    #    for j in range(w):
-    #        hist[img[j,i]] += 1
-    #plt.plot(hist)
-    #plt.show()
 
-def equalizeHistogram():
-    something = 1
+
+
+def equalizeHistogram(img):
+    #Check if image is gray -- copy-paste from calculatehistogram
+    if isGray(img) == True:
+        #Converts image into numpy array
+        imgArray = asarray(img).tolist()
+        #Array of size 256, every value set to 0
+        histogram = [0] * 256
+        #Loop through the imageArray
+        for x in range(len(imgArray)):
+            for y in range(len(imgArray[x])):
+                histogram[imgArray[x][y][0]] += 1
+                histogram[imgArray[x][y][1]] += 1 #Should be histogram[imgArray[x][y]] += 1 , but I think due to some cv2 grayscale error it doesn't work: 
+                histogram[imgArray[x][y][2]] += 1                                      # TypeError: list indices must be integers or slices, not list
+        
+        eqHistogram = [0] * 256
+        #eq Algorithm
+        #[1 2 1 3 4] turns into [1 3 4 7 11]
+        #Value on first index always stays the same
+        eqHistogram[0] = histogram[0]
+        for i in range(255):
+            eqHistogram[i + 1] = histogram[i + 1] + eqHistogram[i]
+
+    else:
+        im = Image.fromarray(img) #Constructs a CASA image from a numerical array
+        b, g, r = im.split() #OpenCV uses BGR order instead of RGB
+        im = Image.merge("RGB", (r, g, b)) #Merging in the correct R G B order
+
+        imgArray = asarray(im).tolist()
+        rHistogram = [0] * 256
+        gHistogram = [0] * 256
+        bHistogram = [0] * 256
+
+        for x in range(len(imgArray)):
+            for y in range(len(imgArray[x])):
+                for k in range(len(imgArray[x][y])):
+                    #0: Red panel
+                    if k == 0:
+                        rHistogram[imgArray[x][y][k]] += 1
+                    #1: Green panel
+                    if k == 1:
+                        gHistogram[imgArray[x][y][k]] += 1
+                    #2: Blue panel
+                    if k == 2:
+                        bHistogram[imgArray[x][y][k]] += 1
+
+        ReqHistogram = [0] * 256
+        GeqHistogram = [0] * 256
+        BeqHistogram = [0] * 256
+
+        ReqHistogram[0] = rHistogram[0]
+        GeqHistogram[0] = gHistogram[0]
+        BeqHistogram[0] = bHistogram[0]
+
+        for i in range(255):
+            ReqHistogram[i + 1] = rHistogram[i + 1] + ReqHistogram[i]
+            GeqHistogram[i + 1] = gHistogram[i + 1] + GeqHistogram[i]
+            BeqHistogram[i + 1] = bHistogram[i + 1] + BeqHistogram[i]
+
+    #Defined y axis on histogram -- copy-paste from calculateHistogram
+    y = np.arange(256)
+    if isGray(img) == True:
+        #Adding the value to be displayed in the histogram
+        plt.title("Equalized - Gray")
+        plt.bar(y, eqHistogram, color = "gray")
+        plt.show()
+    else:
+        plt.title("Equalized - Colored")
+        plt.bar(y, ReqHistogram, color = "red")
+        plt.bar(y, GeqHistogram, color = "green")
+        plt.bar(y, BeqHistogram, color = "blue")
+        plt.show()
 
 def backProjection():
     something = 1
@@ -137,7 +181,7 @@ def backProjection():
 #Calling mainProgram function after setting file_path
 def selectImage(): #Works with jpg, doesnt work with png: "AttributeError: 'NoneType' object has no attribute '__array_interface__'", whatever that means
     #openFileDialog. User selects image to display
-    file_path = filedialog.askopenfilename(filetypes=[("JPG", "*.jpg")])
+    file_path = filedialog.askopenfilename(filetypes=[("JPG", "*.jpg *.jpeg")])
 
     #Removing "Load Image", "Load Video" and "Camera Feed" buttons
     button1.destroy()
@@ -156,7 +200,7 @@ def selectImage(): #Works with jpg, doesnt work with png: "AttributeError: 'None
     height=5,
     bg="yellow",
     fg="black",
-    command=lambda: calculateHistogram(img) #Onclick call ---- function
+    command=lambda: calculateHistogram(img) #Onclick call calculateHistogram function
     )
 
     eqHisto = tk.Button(
@@ -165,7 +209,7 @@ def selectImage(): #Works with jpg, doesnt work with png: "AttributeError: 'None
     height=5,
     bg="yellow",
     fg="black",
-    command=lambda: equalizeHistogram #Onclick call ---- function
+    command=lambda: equalizeHistogram(img) #Onclick call equalizeHistogram function
     )
 
     backProj = tk.Button(
@@ -174,7 +218,7 @@ def selectImage(): #Works with jpg, doesnt work with png: "AttributeError: 'None
     height=5,
     bg="yellow",
     fg="black",
-    command=lambda: backProjection #Onclick call ---- function
+    command=lambda: backProjection #Onclick call backProjection function
     )
 
     backProj.pack(side="bottom", fill="x", expand=False)
